@@ -1,0 +1,16 @@
+# Terraform compiled files
+*.tfstate
+*.tfstate.backup
+.terraform.tfstate.lock.info
+
+# Terraform Module directory
+.terraform/
+
+# Terraform secret variables
+*.tfvars
+
+# PEM Files
+*.pem
+
+# Don't ship variables
+variables.tf

@@ -7,7 +7,7 @@ resource "vsphere_folder" "tftest" {
 
 # Create a virtual machine within the folder
 resource "vsphere_virtual_machine" "tftest" {
-  name       = "node-${format("%02d", count.index+1)}"
+  name       = "node-${format("%02d.${var.datacenter}.${var.domain}", count.index+1)}"
   folder     = "${vsphere_folder.tftest.path}"
   #folder     = "TSEs/tommy/tftest"
   cluster    = "${var.vsphere_cluster}"
@@ -25,7 +25,7 @@ resource "vsphere_virtual_machine" "tftest" {
   dns_servers = ["8.8.8.8", "10.240.0.10"]
 
   disk {
-    datastore = "persistent1"
+    datastore = "${var.datastore}"
     template  = "${var.template_name}"
     type      = "thin"
   }
@@ -50,8 +50,8 @@ provisioner "remote-exec" {
     ]
    connection {
     type        = "ssh"
-    user        = "puppet"
-    password    = "${var.puppet_password}"
+    user        = "${var.node_user}"
+    password    = "${var.node_password}"
     #private_key = "${var.key_file_path}"
    }
   }

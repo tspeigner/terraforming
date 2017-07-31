@@ -1,0 +1,45 @@
+# Create OpenStack (SLICE) Instances with Puppet Agent 
+
+resource "openstack_compute_instance_v2" "instance_1" {
+  name            = "instance_1"
+  image_id        = "5c509a1d-c7b2-4629-97ed-0d7ccd66e154"
+  key_pair        = "${var.openstack_keypair}"
+  flavor_name     = "d1.small"
+  security_groups = ["default"]
+
+  network {
+    name = "${var.tenant_network}"
+  }
+}
+
+resource "openstack_networking_floatingip_v2" "fip_1" {
+  pool = "my_pool"
+}
+
+resource "openstack_compute_floatingip_associate_v2" "fip_1" {
+  floating_ip = "${openstack_networking_floatingip_v2.fip_1.address}"
+  instance_id = "${openstack_compute_instance_v2.instance_1.id}"
+  fixed_ip    = "${openstack_compute_instance_v2.instance_1.network.1.fixed_ip_v4}"
+}
+
+## Remote execution, add master to hosts file, make the puppet lock file to control agents first run, run agent 3 times (until green)
+#
+#  provisioner "remote-exec" {
+#    inline = [
+#      "sudo -u root bash -c \"/bin/echo '10.32.171.156 master.inf.puppet.vm' >> /etc/hosts\"",
+#      "sudo mkdir -p /opt/puppetlabs/puppet/cache/state",
+#      "sudo touch /opt/puppetlabs/puppet/cache/state/agent_disabled.lock",
+#      "sudo bash -c \"curl -k https://master.inf.puppet.vm:8140/packages/current/install.bash | sudo bash -s agent:certname=${format("web-%02d.inf.puppet.vm", count.index+1,)}\"",
+#      "sudo bash -c \"/opt/puppetlabs/bin/puppet agent -t --agent_disabled_lockfile /tmp/puppet_first_run.lock\"",
+#      "sudo bash -c \"/opt/puppetlabs/bin/puppet agent -t --agent_disabled_lockfile /tmp/puppet_first_run.lock\"",
+#      "sudo bash -c \"/opt/puppetlabs/bin/puppet agent -t --agent_disabled_lockfile /tmp/puppet_first_run.lock \"",
+#      "sudo rm /opt/puppetlabs/puppet/cache/state/agent_disabled.lock",
+#      "sudo bash -c \"/opt/puppetlabs/bin/puppet agent --enable\"",
+#      "sudo bash -c \"/opt/puppetlabs/bin/puppet agent -t\"",
+#    ]
+#   connection {
+#    type        = "ssh"
+#    user        = "centos"
+#    private_key = "${file("tls-slice.pem")}"
+#   }
+#}

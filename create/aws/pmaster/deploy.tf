@@ -1,31 +1,48 @@
+  output "puppet_master_private" { 
+    value = "${aws_instance.web.private_dns}"
+  }
+  output "puppet_master_public" { 
+    value = "${aws_instance.web.private_dns}"
+  }
 
 # Declare the instance resource here
 resource "aws_instance" "web" {
   associate_public_ip_address = "true"
   key_name                    = "tommy"
   instance_type               = "t2.medium"
-  security_groups             = ["sg-388fdf43"]
+  security_groups             = ["sg-190e7962"] ##Tommy Master SG
   subnet_id                   = "subnet-fdbb3198" 
   ami                         = "${var.aws_ami}"
 
-provisioner "local-exec" {
-    command = "sudo bash -c \"/bin/echo '${aws_instance.web.public_ip} pmaster' >> /etc/hosts\"",
+
+## Copy the pe.conf file over to the server
+  provisioner "file" {
+    source      = "conf/pe.conf"
+    destination = "/home/ec2-user/pe.conf"
+
+  connection {
+    type        = "ssh"
+    user        = "ec2-user"
+    private_key = "${file("${path.module}/${var.key_file}")}"
+    agent       = "false"
+    timeout     = "5m"
+   }
   }
 
-provisioner "remote-exec" {
+  provisioner "remote-exec" {
     inline = [
-      "sudo bash -c \"yum install -y postgresql mlocate wget telnet git\"",
-      "sudo bash -c \"service postgresql start\"",
-      "sudo bash -c \"chkconfig postgresql\"",
-      ## Download and extract the PE Master files.
-      #"wget --content-disposition \"${var.puppet_master_installer}\"",
-      #"tar -zxvf puppet-enterprise-2017.2.2-el-7-x86_64.tar.gz",
+      # Download and extract the PE Master files.
+      "curl -o ${var.dl_file} -L \"https://pm.puppetlabs.com/cgi-bin/download.cgi?dist=el&rel=7&arch=x86_64&ver=latest\"",
+      "mkdir -p ${var.dl_folder}",
+      "mv /home/ec2-user/pe.conf ${var.dl_folder}",
+      "tar zvxf puppetmaster.tar.gz -C ${var.dl_folder} --strip-components=1",
+      "cd ${var.dl_folder}",
+      "sudo bash -c \"./puppet-enterprise-installer -c pe.conf\"",
+      "sudo bash -c \"/opt/puppetlabs/bin/puppet agent -t\"",
+      "sudo bash -c \"/opt/puppetlabs/bin/puppet agent -t\"",
       ## Download and extract Go Git Server files
-      "wget --content-disposition \"${var.gogs_installer}\"",
-      "tar -zxvf linux_amd64.tar.gz",
-      #"export APP_NAME=\"gogs\" MYSQL_PASSWORD=\"puppetlabs\" HOSTNAME=\"master.inf.puppet.vm\"",
-      #"mysqladmin -u root password \"$${MYSQL_PASSWORD}\" mysqladmin -u root –password=\"$${MYSQL_PASSWORD}\" password \"$${MYSQL_PASSWORD}\" mysql -u root -p$${MYSQL_PASSWORD} -e \"CREATE DATABASE IF NOT EXISTS $${APP_NAME}; use $${APP_NAME}; set global storage_engine=INNODB;\"",
-
+      #"wget --content-disposition \"${var.gogs_installer}\"",
+      #"tar -zxvf linux_amd64.tar.gz",
     ]
    connection {
     type        = "ssh"
@@ -36,7 +53,7 @@ provisioner "remote-exec" {
    }
   }
 
-tags {
+  tags {
     Name    = "master.inf.puppet.vm"
     Owner   = "Tommy"
     Purpose = "TSE Test"

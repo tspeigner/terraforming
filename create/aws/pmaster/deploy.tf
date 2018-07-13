@@ -2,7 +2,7 @@
     value = "${aws_instance.web.private_dns}"
   }
   output "puppet_master_public" { 
-    value = "${aws_instance.web.private_dns}"
+    value = "${aws_instance.web.public_dns}"
   }
 
 # Declare the instance resource here

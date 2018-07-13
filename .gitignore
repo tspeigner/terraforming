@@ -20,3 +20,6 @@ variables.tf
 
 # Apple files
 .DS_Store
+
+# Zip Files
+*.zip

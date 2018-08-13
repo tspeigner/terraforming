@@ -12,7 +12,7 @@ resource "aws_instance" "web" {
   ami                         = "${var.aws_ami}"
 
  #keep separate for looks
- # user_data = "${file("bootstrap.sh")}"
+  user_data = "${file("bootstrap.sh")}"
 
 tags {
     Name       = "${format("web-%02d.inf.puppet.vm", count.index+1,)}"

@@ -1,8 +1,8 @@
 resource "openstack_compute_instance_v2" "disco_server" {
   name            = "${format("${var.vm_prefix}-%02d.${var.datacenter}.${var.domain}", count.index+1)}"
-  count           = "${var.count}"
+  count           = "${var.server_count}"
   image_id        = "5c509a1d-c7b2-4629-97ed-0d7ccd66e154"
-  flavor_name     = "d1.small"
+  flavor_name     = "g1.medium"
   key_pair        = "tls-slice"
   security_groups = ["default", "sg0"]
 
@@ -12,12 +12,12 @@ resource "openstack_compute_instance_v2" "disco_server" {
 }
 
 resource "openstack_networking_floatingip_v2" "myip" {
-  count = "${var.count}"
+  count = "${var.server_count}"
   pool  = "${var.fip_pool}"
 }
 
 resource "openstack_compute_floatingip_associate_v2" "myip" {
-  count       = "${var.count}"
+  count       = "${var.server_count}"
   floating_ip = "${element(openstack_networking_floatingip_v2.myip.*.address, count.index+1)}"
   instance_id = "${element(openstack_compute_instance_v2.disco_server.*.id, count.index+1)}"
   }
@@ -33,24 +33,21 @@ resource "null_resource" "provision" {
     agent       = "true"
     timeout     = "5m"
   }
+
+  provisioner "file" {
+    source      = "${var.pd_license_file}"
+    destination = "${var.pd_license_loc}${var.pd_license_file}"
+  }
+  provisioner "file" {
+    source      = "installpd.sh"
+    destination = "${var.pd_license_loc}/installpd.sh"
+  }
   # Set the PE master hostname on the new node
   # Install PE agent
   provisioner "remote-exec" {
   inline = [
-    "sudo -u root bash -c \"/bin/echo ${var.pe_ip} master.inf.puppet.vm >> /etc/hosts\"",
-    "sudo -u root bash -c \"/usr/bin/hostnamectl set-hostname ${openstack_compute_instance_v2.disco_server.name}\"",
-    "sudo mkdir -p /opt/puppetlabs/puppet/cache/state",
-    "sudo touch /opt/puppetlabs/puppet/cache/state/agent_disabled.lock",
-<<<<<<< HEAD
-    "sudo bash -c \"curl -k https://master.inf.puppet.vm:8140/packages/current/install.bash | sudo bash\"",
-=======
-    "sudo bash -c \"curl -k https://master.inf.puppet.vm:8140/packages/current/install.bash | sudo bash -s extenssion_requests:pp_role=windows_webserver\"",
->>>>>>> a1fac142bdcd1e94fabfd4c16327841cdb4b0a18
-    "sudo bash -c \"/opt/puppetlabs/bin/puppet agent -t --agent_disabled_lockfile /tmp/puppet_first_run.lock \"",
-    "sudo rm /opt/puppetlabs/puppet/cache/state/agent_disabled.lock",
-    "sudo bash -c \"/opt/puppetlabs/bin/puppet agent --enable\"",
-    "sudo bash -c \"/opt/puppetlabs/bin/puppet agent -t\"",
-    "",
+    "sudo chmod a+x ${var.pd_license_loc}/installpd.sh",
+    "sudo ./installpd.sh",
   ]
   }
 }

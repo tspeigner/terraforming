@@ -6,7 +6,10 @@ resource "openstack_networking_floatingip_v2" "myip" {
 resource "openstack_compute_instance_v2" "web" {
   name = "${format("web-%02d.${var.datacenter}.${var.domain}", count.index+1)}"
 
+<<<<<<< HEAD
   #name            = "${format("web-%02d.${var.domain}", count.index+1)}"
+=======
+>>>>>>> a1fac142bdcd1e94fabfd4c16327841cdb4b0a18
   count           = "${var.count}"
   image_id        = "5c509a1d-c7b2-4629-97ed-0d7ccd66e154"
   flavor_name     = "d1.small"
@@ -25,6 +28,7 @@ resource "openstack_compute_floatingip_associate_v2" "myip" {
 
   # Remote execution, add master to hosts file, make the puppet lock file to control agents first run, run agent 3 times (until green)
 
+<<<<<<< HEAD
   #  provisioner "local-exec" {
   #    count   = "${var.count}"
   #    command = "sudo bash -c \"/bin/echo '${element(openstack_compute_floatingip_associate_v2.myip.*.floating_ip, count.index+1)} ${openstack_compute_instance_v2.web.name}' >> /etc/hosts\""
@@ -55,4 +59,33 @@ resource "openstack_compute_floatingip_associate_v2" "myip" {
   #     agent       = "true"
   #   }
   # }
+=======
+provisioner "local-exec" {
+  count   = "${var.count}"
+  command = "sudo bash -c \"/bin/echo '${element(openstack_compute_floatingip_associate_v2.myip.*.floating_ip, count.index+1)} ${openstack_compute_instance_v2.web.name}' >> /etc/hosts\""
+}
+   provisioner "remote-exec" {
+
+     inline = [
+       "sudo -u root bash -c \"/bin/echo '192.168.0.24 master.inf.puppet.vm' >> /etc/hosts\"",
+       "sudo mkdir -p /opt/puppetlabs/puppet/cache/state",
+       "sudo touch /opt/puppetlabs/puppet/cache/state/agent_disabled.lock",
+       "sudo bash -c \"curl -k https://master.inf.puppet.vm:8140/packages/current/install.bash | sudo bash -s extension_requests:pp_role=sample_website agent:certname=${format("web-%02d.${var.datacenter}.${var.domain}", count.index+1,)}\"",
+       "sudo bash -c \"/opt/puppetlabs/bin/puppet agent -t --agent_disabled_lockfile /tmp/puppet_first_run.lock\"",
+       "sudo bash -c \"/opt/puppetlabs/bin/puppet agent -t --agent_disabled_lockfile /tmp/puppet_first_run.lock\"",
+       "sudo rm /opt/puppetlabs/puppet/cache/state/agent_disabled.lock",
+       "sudo bash -c \"/opt/puppetlabs/bin/puppet agent --enable\"",
+       "sudo bash -c \"/opt/puppetlabs/bin/puppet agent -t\"",
+     ]
+
+     # Setup the host connection for remote-exec commands
+     connection {
+       type        = "ssh"
+       host        = "${openstack_compute_instance_v2.web.name}" #poor persons DNS. If DNS is working ignore.
+       user        = "${var.connection_user}"
+       private_key = "${file("${var.private_key}")}"
+       agent       = "true"
+     }
+   }
+>>>>>>> a1fac142bdcd1e94fabfd4c16327841cdb4b0a18
 }

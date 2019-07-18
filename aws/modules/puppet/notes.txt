@@ -1,0 +1,7 @@
+Things needed for provisioning of puppet master
+* practice provisioning this node
+* verify PE master is running
+* verify files are in place, autosign.conf and pe.conf
+* create a linux module to provision linux nodes with puppet provisioner
+* create a windows module to provision windows nodes with puppet provisioner
+* build a docker container to run terraform

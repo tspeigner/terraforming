@@ -78,7 +78,7 @@ resource "azurerm_virtual_machine" "tsetfdemo" {
   os_profile {
     computer_name  = "tsetfdemo"
     admin_username = "tsedemo"
-    admin_password = "REPLACEME!"
+    admin_password = "Puppet4Life!"
   }
 
   os_profile_linux_config {

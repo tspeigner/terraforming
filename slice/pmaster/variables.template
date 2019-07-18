@@ -1,0 +1,19 @@
+variable "fip_pool" {
+  default = ""
+}
+
+variable "openstack_user_name" {
+  default = ""
+}
+
+variable "openstack_tenant_name" {
+  default = ""
+}
+
+variable "openstack_password" {
+  default = ""
+}
+
+variable "openstack_auth_url" {
+  default = ""
+}

@@ -14,3 +14,9 @@
 
 # Don't ship variables
 variables.tf
+
+# raw file for controller instance.
+*.raw
+
+# Apple files
+.DS_Store

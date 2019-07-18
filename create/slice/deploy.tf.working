@@ -1,14 +1,5 @@
-variable "count" {
- default = "2"
-}
-
-variable "use_floating_ip" {
-  default = "1"
-}
-
 resource "openstack_networking_floatingip_v2" "myip" {
-  pool  = "${var.fip_pool}"
-  count = "${var.use_floating_ip > 0 ? var.count : 0}"
+  pool = "${var.fip_pool}"
 }
 
 resource "openstack_compute_instance_v2" "web" {
@@ -27,22 +18,26 @@ resource "openstack_compute_instance_v2" "web" {
 }
 
 resource "openstack_compute_floatingip_associate_v2" "myip" {
-  count       = "${var.use_floating_ip > 0 ? var.count : 0}"
-  floating_ip = "${element(openstack_networking_floatingip_v2.myip.*.address, count.index)}"
-  instance_id = "${element(openstack_compute_instance_v2.web.*.id, count.index)}"
+  floating_ip = "${openstack_networking_floatingip_v2.myip.0.address}"
+  instance_id = "${openstack_compute_instance_v2.web.0.id}"
 
 
 # Remote execution, add master to hosts file, make the puppet lock file to control agents first run, run agent 3 times (until green)
 
   provisioner "local-exec" {
-    #command = "sudo bash -c \"/bin/echo '${openstack_compute_floatingip_associate_v2.myip.floating_ip} ${openstack_compute_instance_v2.web.name}' >> /etc/hosts\"",
-    command = "sudo bash -c \"/bin/echo '${var.slice_linux_vms} ${openstack_compute_instance_v2.web.name}' >> /etc/hosts\"",
+    command = "sudo bash -c \"/bin/echo '${openstack_compute_floatingip_associate_v2.myip.floating_ip} ${openstack_compute_instance_v2.web.name}' >> /etc/hosts\"",
   }
+
+## Create the keytabe file on the newly created instance.
+  provisioner "file" {
+    source      = "administrator.keytab"
+    destination = "/tmp/administrator.keytab"
+    }
 
 ## Setup the connection information to copy the file over.
   connection {
     type        = "ssh"
-    host        = "${openstack_compute_instance_v2.web.name}" 
+    host        = "${openstack_compute_instance_v2.web.*.name}" #poor persons DNS. If DNS is working ignore.
     user        = "${var.connection_user}"
     private_key = "${file("${var.private_key}")}"
     }
@@ -50,7 +45,8 @@ resource "openstack_compute_floatingip_associate_v2" "myip" {
   provisioner "remote-exec" {
     inline = [
       "sudo -u root bash -c \"/bin/echo '10.32.171.156 master.inf.puppet.vm' >> /etc/hosts\"",
-      "sudo -u root bash -c \"/usr/bin/hostnamectl set-hostname ${openstack_compute_instance_v2.web.*.name}\"",
+      "sudo -u root bash -c \"/bin/echo '10.32.171.175 puppet.local' >> /etc/hosts\"",
+      "sudo -u root bash -c \"/usr/bin/hostnamectl set-hostname ${openstack_compute_instance_v2.web.name}\"",
       "sudo mkdir -p /opt/puppetlabs/puppet/cache/state",
       "sudo touch /opt/puppetlabs/puppet/cache/state/agent_disabled.lock",
       "sudo bash -c \"curl -k https://master.inf.puppet.vm:8140/packages/current/install.bash | sudo bash -s extension_requests:pp_role=role::activedirectory agent:certname=${format("web-%02d.${var.datacenter}.${var.domain}", count.index+1,)}\"",
@@ -63,32 +59,16 @@ resource "openstack_compute_floatingip_associate_v2" "myip" {
 # Setup the host connection for remote-exec commands
    connection {
     type        = "ssh"
-    host        = "${openstack_compute_instance_v2.web.name}" 
+    host        = "${openstack_compute_instance_v2.web.name}" #poor persons DNS. If DNS is working ignore.
     user        = "${var.connection_user}"
     private_key = "${file("${var.private_key}")}"
     }
   }
-
-# Purge the node from PuppetDB when Terraform Destroy is run
-  provisioner "remote-exec" {
-    when   = "destroy"
-    inline = [
-    # Purge node from PE Database
-      #"sudo bash -c \"/opt/puppetlabs/bin/puppet node purge ${element(openstack_compute_instance_v2.web.*.name)}\"",
-      "sudo bash -c \"/opt/puppetlabs/bin/puppet node purge ${element(openstack_compute_instance_v2.web.*.name, count.index)}\"",
-      #"sudo bash -c \"/opt/puppetlabs/bin/puppet cert clean ${element(openstack_compute_instance_v2.web.*.name)}\"",
-    ]
-  connection {
-    type        = "ssh"
-    host        = "10.32.171.156" # puppet master IP
-    user        = "${var.connection_user}"
-    private_key = "${file("${var.master_key}")}"
-    }
-  }
+  
 }
-  #output "slice_floating_ip" {
-  #  value = "${openstack_networking_floatingip_v2.myip.*.address}"
-  #} 
-  #output "slice_linux_vms" {
-  #  value = "${openstack_compute_instance_v2.web.*.name}"
-  #} 
+  output "slice_floating_ip" {
+    value = "${openstack_networking_floatingip_v2.myip.0.address}"
+  } 
+  output "slice_linux_vms" {
+    value = "${openstack_compute_instance_v2.web.*.name}"
+  } 

@@ -113,7 +113,7 @@ resource "azurerm_virtual_machine_scale_set" "tlsterraformvm" {
 
     os_profile {
         admin_username = "testadmin"
-        admin_password = "Password1234!"
+        admin_password = "REPLACEME!"
         #custom_data    = "${file("bootstrap.sh")}"
         computer_name_prefix = "${format("web-%02d.inf.puppet.vm", count.index+1,)}"
     }

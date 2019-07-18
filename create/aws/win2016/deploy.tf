@@ -22,11 +22,7 @@ resource "aws_instance" "web" {
   
 
 tags {
-<<<<<<< HEAD
-    Name    = "${format("mysql-%02d.inf.puppet.vm", count.index+1,)}"
-=======
     Name    = "${format("win2016-%02d.inf.puppet.vm", count.index+1,)}"
->>>>>>> a1fac142bdcd1e94fabfd4c16327841cdb4b0a18
     Owner   = "Tommy"
     Purpose = "TSE Test"
     Tech    = "Terraform"

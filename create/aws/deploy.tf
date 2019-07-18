@@ -17,12 +17,7 @@ provisioner "remote-exec" {
     inline = [
       "sudo mkdir -p /opt/puppetlabs/puppet/cache/state",
       "sudo touch /opt/puppetlabs/puppet/cache/state/agent_disabled.lock",
-<<<<<<< HEAD
-      "sudo bash -c \"curl -k https://ip-10-98-10-242.us-west-2.compute.internal:8140/packages/current/install.bash | sudo bash -s extension_requests:pp_role=role::tomcat\"",
-      "sudo bash -c \"/opt/puppetlabs/bin/puppet agent -t --agent_disabled_lockfile /tmp/puppet_first_run.lock\"",
-=======
       "sudo bash -c \"curl -k https://ip-10-98-10-11.us-west-2.compute.internal:8140/packages/current/install.bash | sudo bash -s extension_requests:pp_role=role::linux_webserver\"",
->>>>>>> a1fac142bdcd1e94fabfd4c16327841cdb4b0a18
       "sudo bash -c \"/opt/puppetlabs/bin/puppet agent -t --agent_disabled_lockfile /tmp/puppet_first_run.lock\"",
       "sudo bash -c \"/opt/puppetlabs/bin/puppet agent -t --agent_disabled_lockfile /tmp/puppet_first_run.lock \"",
       "sudo rm /opt/puppetlabs/puppet/cache/state/agent_disabled.lock",

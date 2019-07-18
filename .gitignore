@@ -20,9 +20,6 @@ variables.tf
 
 # Apple files
 .DS_Store
-<<<<<<< HEAD
-=======
 
 # Zip Files
 *.zip
->>>>>>> a1fac142bdcd1e94fabfd4c16327841cdb4b0a18
